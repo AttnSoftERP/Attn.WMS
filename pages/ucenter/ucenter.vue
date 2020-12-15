@@ -7,9 +7,10 @@
 						<view class="avator">
 							<image :src="userinfo.avatar ? userinfo.avatar : '../../static/toux.jpg'" @tap="avatar"></image>
 						</view>
-						<view class="phone-number">当前用户:{{userinfo.user_nickname ? userinfo.user_nickname : "未设置昵称"}}</view>
+						<view class="phone-number">当前用户：{{userinfo.username ? userinfo.username : "未设置昵称"}}</view>
+						<view class="phone-number">登录账套：{{userinfo.compno ? userinfo.compno : "未登录"}}-{{userinfo.compname ? userinfo.compname : ""}}</view>
 					</view>
-					<view class="box-bd">
+<!-- 					<view class="box-bd">
 						<navigator url="product" class="item">
 							<view class="icon"><img src="../../static/user/product.png"></view>
 							<view class="text">产品类目</view>
@@ -22,7 +23,7 @@
 							<view class="icon"><img src="../../static/user/supplier.png"></view>
 							<view class="text">供应商管理</view>
 						</navigator>
-					</view>
+					</view> -->
 				</view>
 			</view>
 		</view>
@@ -42,7 +43,7 @@
 					<view class="text">主题切换</view>
 					<image class="to" src="../../static/user/to.png"></image>
 				</view>-->
-				<navigator url="help_u" class="li " >
+<!-- 				<navigator url="help_u" class="li " >
 					<view class="icon"><image src="../../static/user/help.png"></image></view>
 					<view class="text">帮助中心</view>
 					<image class="to" src="../../static/user/to.png"></image>
@@ -51,20 +52,20 @@
 					<view class="icon"><image src="../../static/user/about.png"></image></view>
 					<view class="text">关于我们</view>
 					<image class="to" src="../../static/user/to.png"></image>
-				</navigator>
+				</navigator> -->
 				<view class="li "  @tap="logout">
 					<view class="icon"><image src="../../static/user/exit.png"></image></view>
 					<view class="text">退出登录</view>
 					<image class="to" src="../../static/user/to.png"></image>
 				</view>
 			</view>
-			<view class="list">
+<!-- 			<view class="list">
 				<view class="li noborder" @click="setting">
 					<view class="icon"><image src="../../static/user/set.png"></image></view>
 					<view class="text">系统设置</view>
 					<image class="to" src="../../static/user/to.png"></image>
 				</view>
-			</view>
+			</view> -->
 		</view>
 	</view>	
 </template>
@@ -76,7 +77,7 @@
 		components: {tkiQrcode},
 		data() {
 			return {
-				userinfo: "",
+				userinfo: {},
 				avatar: "../../static/toux.jpg",
 				version:'',
 				src: '', // 二维码生成后的图片地址或base64
@@ -131,19 +132,29 @@
 					title: '提示',
 					content: '确定要退出登录？',
 					success: function(res) {
+
 						if (res.confirm) {
-							api.post({
-								url: 'user/public/logout',
-								method: 'POST',
-								success: (data) => {
-									uni.clearStorageSync()
-									that.userinfo = ''
-									//强制页面重载，跳转到登录页
-									uni.reLaunch({
-										url: '../login/login'
-									});
-								}
+							uni.clearStorageSync();
+							uni.setStorageSync('pre_user', that.userinfo.userno);
+							uni.setStorageSync('pre_compno', that.userinfo.compno);
+							that.userinfo = '';
+							//强制页面重载，跳转到登录页
+							uni.reLaunch({
+								url: '../login/login'
 							});
+							
+							// api.post({
+							// 	url: 'user/public/logout',
+							// 	method: 'POST',
+							// 	success: (data) => {
+							// 		uni.clearStorageSync()
+							// 		that.userinfo = ''
+							// 		//强制页面重载，跳转到登录页
+							// 		uni.reLaunch({
+							// 			url: '../login/login'
+							// 		});
+							// 	}
+							// });
 						} else if (res.cancel) {
 							//console.log('用户点击取消')
 						}

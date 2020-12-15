@@ -1,241 +1,148 @@
 <template>
-	<view class="main">
-		<!--<cover-image src = "../../static/bg.png"></cover-image>-->
-		<view class="bghead"></view>
-		<view class="main">
-			<!--左侧小区名称 右侧新增登记-->
-			<view id="head1" class="flex justify-around margin-top-sm ">
-				<navigator url="supplierview" class="flex align-center">					
-					<view class="cuIcon-peoplelist text-white" style="font-size: 50upx"></view>
-				</navigator>
-				<view></view><view></view><view></view><view></view>
-				<navigator url="customerview" class="flex align-center">
-					<view>
-						<view class="cuIcon-group text-white text-bold" style="font-size: 50upx"></view>
-					</view>
-				</navigator>
-			</view>
-			<!--社区出行概况-->
-			<view id="chuxing" class="flex  justify-center align-center margin-top-sm">
-				<view class="head_box">
-	
-					<view class="flex justify-around text-df padding-top">
-						<text>今日出入库情况</text>
-						<text>（单位：单）</text>
-					</view>
-					<view class="flex justify-around padding-top-xl">
-						<view class="flex flex-direction align-center">
-							<text class="text-orange text-bold">{{today.totalinstorage}}</text>
-							<text>今日入库</text>
-						</view>
-						<view class="flex flex-direction align-center">
-							<text class="text-orange text-bold">{{today.totaloutstorage}}</text>
-							<text>今日出库</text>
-						</view>
-						<view class="flex flex-direction align-center">
-							<text class="text-orange text-bold">{{today.totalprofit}}元</text>
-							<text>今日利润</text>
-						</view>
-					</view>
+	<view>
+		<view class="swiper">
+			<view class="page-section swiper">
+				<view class="page-section-spacing">
+					<swiper class="swiper" :indicator-dots="indicatorDots" :autoplay="autoplay" :interval="interval" :duration="duration">
+						<swiper-item v-for="item in banner" :key="item.id">
+							<image @tap='bannerDetail(item.url)' :src="item.image"  class="swiper-item" />
+						</swiper-item>
+					</swiper>
 				</view>
 			</view>
-			<!--两个功能按钮-->
-			<view id="btn" class="flex justify-around margin-top-sm">
-				<navigator class="btn-box bg-gradual-blue flex align-center justify-center"  @tap="instorage">
-					<text class="text-xxl text-shadow">入库登记</text>
-					<text class="cuIcon-cart padding-left-xs" style="font-size: 90upx;opacity: 0.2"></text>
-				</navigator>
-				<view class="btn-box bg-gradual-green flex align-center justify-center" @tap="outstorage">
-					<text class="text-xxl text-shadow">出库登记</text>
-					<text class="cuIcon-deliver padding-left-xs" style="font-size: 90upx;opacity: 0.2"></text>
-				</view>
-			</view>
-			<!--概况记录-->
-			<view id="segmented" class="margin-top-sm">
-				<uni-segmented-control :current="current" :values="items" style-type="text" :active-color="activeColor" @clickItem="onClickItem" />
-			</view>
-			<!-- class="scroll" -->
-			<scroll-view id="scroll" scroll-y = "true" :style="{height:scrollHeight}">
-				<view class="cu-list menu card-menu margin-top-sm" >
-					<navigator :url="'../detail/detail?id=' + item.id" class="cu-item" v-for="(item,key) in logList" :key = "key">
-						<view class="content padding-tb-sm">							
-							<view>产品名称：{{item.product_name}}</view>
-							<template v-if="item.state==1">
-							<view class="text-gray ">
-								入库数量： {{item.product_num}}
-							</view>
-							</template>
-							<template v-else>
-								<view class="text-gray ">
-									出库数量： {{item.product_num}}
-								</view>
-							</template>
-							<template v-if="item.state==1">
-								<view class="text-gray ">
-									入库时间： {{item.add_time}}
-								</view>
-							</template>
-							<template v-else>
-								<view class="text-gray ">
-									出库时间： {{item.add_time}}
-								</view>
-							</template>
-						</view>
-						<view class="action">
-							<template v-if="item.state==1">
-								<view class="cu-tag round bg-green">供应商：{{item.supplier}}</view>
-							</template>
-							<template v-else>
-								<view class="cu-tag round bg-green">客户：{{item.customer}}</view>
-							</template>
-						</view>
-					</navigator>
-				</view>
-			</scroll-view>			
 		</view>		
+		<zy-grid :grid-list=gridList :show-tip="true" :col="3"></zy-grid>
+<!-- 		<view class="uni-list">
+			<view class="uni-list-cell" hover-class="uni-list-cell-hover" v-for="(value,key) in listData" :key="key" @tap='showDetail(value)'>
+				<view class="uni-list-cell-navigate uni-navigate-right uni-media-list ">
+					<view class="uni-media-list-logo">
+						<image :src="value.image_url ? value.image_url : '../../static/logo.png'"></image>
+					</view>
+					<view class="uni-media-list-body">
+						<view class="uni-media-list-text-top uni-ellipsis">{{value.title}}</view>
+						<view class="uni-media-list-text-bottom uni-ellipsis">发表于：{{value.datetime}}</view>
+					</view>
+				</view>
+			</view>
+		</view> -->
 	</view>
 </template>
 <script>
-	var api = require('@/common/api.js');	
-	import uniSegmentedControl from '@/components/uni-segmented-control/uni-segmented-control.vue';
+	var api = require('@/common/api.js'),
+		page = 1,
+		reachbottom = true
+	import permision from "@/common/permission.js"	
+	import zyGrid from '@/components/zy-grid/zy-grid.vue'
+	import {
+		friendlyDate
+	} from '@/common/util.js'
 	export default {
 		data() {
-			return {				
-				current: 0,
-				items: ['入库记录', '出库记录'],
-				activeColor: '#66ccff',
-				scrollHeight:'',
-				today:{},
-				shequ:{},
-				logList:[],
-				token:''
+			return {
+				banner: [],
+				listData: [],
+				indicatorDots: true,
+				autoplay: true,
+				interval: 3000,
+				duration: 500,
+				keyword: "",
+				title: 'scanCode',
+				result: '',
+				loading: false,
+				username: "",
+				password: "",
+				gridList: [	//格子数据列表
+					{
+						name: '出库->销货',
+						imgUrl: '../../static/zy-grid/grid-04.svg',
+						tips: ''
+					},
+					{
+						name: '制令->缴库',
+						imgUrl: '../../static/zy-grid/grid-07.svg',
+						tips: ''
+					},
+					{
+						name: '客户列表',
+						imgUrl: '../../static/zy-grid/grid-08.svg',
+						tips: ''
+					}
+					//,
+					// {
+					// 	name: '单据查找',
+					// 	imgUrl: '../../static/zy-grid/grid-10.svg',
+					// 	tips: ''
+					// },
+					// {
+					// 	name: '扫码缴库',
+					// 	imgUrl: '../../static/zy-grid/grid-02.svg',
+					// 	tips: ''
+					// },
+					// {
+					// 	name: '扫码出库',
+					// 	imgUrl: '../../static/zy-grid/grid-01.svg',
+					// 	tips: ''
+					// }									
+				]
 			}
 		},
-		components: {uniSegmentedControl},
-		onReady() {
-			let _this = this;
-			let segmented = uni.createSelectorQuery().select("#segmented");
-			let sysinfo = uni.getSystemInfoSync();
-			let Height = sysinfo.windowHeight;
-			segmented.boundingClientRect(data=>{
-				// console.log(data);
-				let sH = (Height - data.top - 32).toFixed();
-				_this.scrollHeight = sH+'px';
-				// console.log(_this.scrollHeight);
-			}).exec();
-			this.loadToday();			
+		components: {
+			zyGrid
 		},
-		onLoad() {			
-			this.token = uni.getStorageSync('token');
-			if(this.token){
-				console.log(this.token)
-				console.log(api.DeviceType)
-				this.loadToday();
-			}else{
-				console.log('token没有');
-			}						
-		},		
+		onLoad() {
+			this.loadBanner()			
+		},
+		onReady() {			
+			
+		},
 		//下拉刷新
-		onPullDownRefresh() {			
-			this.loadToday()			
+		onPullDownRefresh() {
+			page = 1
+			reachbottom = true
+			this.listData = []
+			this.loadBanner()			
 			uni.stopPullDownRefresh();
-		},		
+		},
+		// 加载更多
+		onReachBottom: function() {
+			//if (reachbottom) {
+				//this.getList();
+			//}
+		},
 		methods: {
 			/**
-			 * 加载今日数据
+			 * 加载幻灯片
 			 */
-			loadToday: function() {
-				api.post({
-					url: 'wms/Index/index',
-					data: {
-						device_type: api.DeviceType
-					},
+			loadBanner: function() {
+				var items=[
+					{id:1,url:"../../static/title1.jpg",image:"../../static/title1.jpg"},
+					{id:2,url:"../../static/title1.jpg",image:"../../static/title1.jpg"}
+				];
+				this.banner =items;
+				
+/* 				api.get({
+					url: 'home/slides/1',
+					data: {},
 					success: data => {
 						//console.log(data);
 						if (data.code == 1) {
-							this.today = data.data
-							this.getList(1)
+							this.banner = data.data[0].items;							
 						}
+						this.getList();
 					}
-				});
-			},			
-			instorage(){
-				uni.navigateTo({
-					url:'../instorage/instorage'
-				})
+				}); */
 			},
-			outstorage(){
-				uni.navigateTo({
-					url:'../outstorage/outstorage'
-				})
-			},	
-			onClickItem(index) {
-				//console.log(index)
-				if (this.current !== index) {
-					this.current = index
-				}
-				if(index === 0){//入库记录
-					this.getList(1)
-				}else if(index === 1){ //出库记录
-					this.getList(2)
-				}
-			},				
-			/**
-			 * 加载文章列表
-			 */
-			getList(type){
-				console.log(type)
-				api.post({
-					url: 'wms/Index/instoragelog',
-					data: {						
-						state:type,
-						device_type: api.DeviceType
-					},
-					success: data => {
-						console.log(data);
-						this.logList = data.data;						
-					}
-				});
-			}			
+			
+			bannerDetail(detail) {
+				// uni.navigateTo({
+				// 	url: '/pages/article/article?id=' + detail
+				// });
+			}
 		}
 	}
 </script>
 
 <style>
-	cover-image {
-		position: absolute;
-		left: 0;
-		top: 0;
-		height: 300rpx;
-		width: 100%;
-	}
-	.bghead{
-		position: absolute;
-		left: 0;
-		top: 0;
-		height: 300rpx;
-		width: 100%;
-		background-color: #66ccff;
-	}	
-	.main{
-		position: absolute;
-		top: 0;width: 100%;
-	}
-	.head_box{
-		width: 700upx;
-		height: 220upx;
-		background-color: #ffffff;
-		border-radius: 15upx;
-	}
-	.btn-box{
-		width: 310upx;
-		height: 150upx;
-		border-radius: 20upx;
-	}
-	.scroll{
-		height: 700rpx;
-	}
-	
 	.swiper {
 		height: 350upx;
 	}

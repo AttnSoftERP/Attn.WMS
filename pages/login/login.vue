@@ -1,24 +1,44 @@
 <template>	
-	<view class="zai-box">
-		<image src="../../static/zaizai-login/logo.png" mode='aspectFit' class="zai-logo"></image>
-		<view class="zai-title"></view>
-		<view class="zai-form">
-			<input class="zai-input" type="number" v-model="username" placeholder-class placeholder="请输入手机号" />
-			<input class="zai-input" :password="true" v-model="password" placeholder-class password placeholder="请输入密码"/>
-			<view class="zai-label" @tap="forget">忘记密码？</view>
-			<button class="zai-btn" @tap="login">立即登录</button>
-			<navigator url="../register/register" hover-class="none" class="zai-label">还没有账号？点此注册.</navigator>
+	<view class="content">
+		<view class="avatorWrapper">
+			<view class="avator">
+				<image class="img" src="../../static/sunlike.png" mode="widthFix"></image>
+			</view>		
 		</view>
+		<view class="zai-title">系统登录</view>		
+		<view class="zai-form">
+			<picker name="Comp" :range="complist" :value="compIndex" range-key="NAME" @change="onPickerChange" >
+				<view class="picker zai-input">
+					{{complist[compIndex].COMPNO}}-{{complist[compIndex].NAME}}						
+				</view>
+			</picker>
+			<input class="zai-input" v-model="userno" placeholder-class placeholder="请输入账号" />
+			<input class="zai-input" :password="true" v-model="password" placeholder-class password placeholder="请输入密码"/>
+			<button class="zai-btn" @tap="login">登录</button>
+
+			<view class="otherlogins">
+				<view class="cu-item " style="display:flex;flex-direction: column;" @click="wxLogin">
+					<image class="img" style="width: 125rpx;height: 125rpx;" src="../../static/wxlogoNew.png" mode="widthFix"></image>
+					<text class="text-gray">微信登录</text>
+				</view>
+			</view>
+		</view>
+
+			
+			
+			
+
 	</view>
+
 </template>
 
 <script>
 	var api = require('@/common/api.js')
 	export default {
 		onLoad(e) {
+			console.log("e.token:"+e.token);			
 			if (e.token) {
-				uni.showLoading()
-				//console.log(e.token);
+				uni.showLoading()				
 				uni.setStorageSync('upload', 1)
 				uni.setStorageSync('login', 1)
 				uni.setStorageSync('token', e.token)
@@ -34,15 +54,61 @@
 					});
 				}), 1000);
 			}
+			else
+			{
+				this.loadPicker();
+				if(e.userno)
+				{
+					this.userno=e.userno;
+				}
+				var pre_user=uni.getStorageSync('pre_user');
+				if(pre_user)
+				{
+					this.userno= pre_user;
+				}
+				if(e.password)
+				{
+					this.password=e.password;
+				}
+			}
+
 		},
 		data() {
 			return {
 				loading: false,
-				username: "",
+				pre_compno:"",
+				userno: "",
 				password: "",
+				compIndex:0,
+				complist:[],
+				compno:""
 			};
 		},
 		methods: {
+			loadPicker: function() {
+				api.get({
+					url: 'User/GetCompList',
+					data: {
+						device_type: api.DeviceType
+					},
+					success: data => {
+						console.log(data);
+						if(data.Status == 'success'){
+							this.complist=data.Data;
+							this.pre_compno=uni.getStorageSync('pre_compno');
+							console.log(this.pre_compno);
+							var pre_compindex=this.complist.findIndex(c=>{return c.COMPNO==this.pre_compno});				
+							if(pre_compindex>=0)
+							{
+								this.compIndex=pre_compindex;
+							}
+						}
+					}
+				});
+			},
+			onPickerChange(e) {
+				this.compIndex = e.detail.value
+			},
 			qqlogin() {
 				uni.navigateTo({
 					url: '../qqlogin/qqlogin',
@@ -53,34 +119,34 @@
 			},
 			login() {
 				this.loading = true;
-				if (this.username == '') {
+				if (this.userno == '') {
 					uni.showToast({
 						icon: 'none',
-						title: '请输入手机号或邮箱'
+						title: '请输入系统账号'
 					});
 					this.loading = false;
 					return;
 				}
-				if (this.password == '') {
-					uni.showToast({
-						icon: 'none',
-						title: '请输入密码'
-					});
-					this.loading = false;
-					return;
-				}
+				// if (this.password == '') {
+				// 	uni.showToast({
+				// 		icon: 'none',
+				// 		title: '请输入密码'
+				// 	});
+				// 	this.loading = false;
+				// 	return;
+				// }
 				api.post({
-					url: 'user/public/login',
+					url: 'user/login',
 					data: {
-						username: this.username,
-						password: this.password,
+						compno:this.complist[this.compIndex].COMPNO,
+						userno: this.userno,
+						password: this.password,						
 						device_type: api.DeviceType
 					},
 					success: data => {
-						//console.log(data);
+						console.log(data);
 						if (data.code == 1) {
 							this.loading = false;
-							//console.log(data);
 							uni.showToast({
 								duration: 500,
 								icon: 'success',
@@ -93,18 +159,21 @@
 							});
 							uni.setStorageSync('upload', 1)
 							uni.setStorageSync('login', 1)
-							uni.setStorageSync('token', data.data.token)
-							uni.setStorageSync('user', data.data.user)
+							uni.setStorageSync('token', data.token)
+							uni.setStorageSync('user', data.user)
+							uni.setStorageSync('pre_user', data.user.userno)
+							uni.setStorageSync('pre_compno', data.user.compno)
+							
 							setTimeout((e => {
 								uni.navigateBack();
 							}), 500);
 						}
-						if (data.code == 0) {
+						else {
 							this.loading = false;
 							uni.showToast({
 								duration: 1500,
 								icon: 'none',
-								title: data.msg
+								title: data.ErrorMsg
 							});
 						}
 					}
@@ -123,22 +192,36 @@
 				});
 			},
 			//小程序登录
-			onGotUserInfo() {
+			wxLogin() {
+				if (this.userno == '') {
+					uni.showToast({
+						icon: 'none',
+						title: '请输入系统账号'
+					});
+					this.loading = false;
+					return;
+				}
 				uni.login({
+					provider: "weixin",
 					success: loginRes => {
+						console.log('login 成功：');
+						console.log(loginRes);
 						if (loginRes.code) {
 							uni.getUserInfo({
+								provider: 'weixin',
 								withCredentials: true,
 								success: res => {
-									//console.log(res)
-									api.post({
-										url: 'wxapp/public/login',
+									console.log('getUserInfo 成功：');
+									console.log(res);
+									var nickName = res.userInfo.nickName; //昵称
+									var avatarUrl = res.userInfo.avatarUrl; //头像
+									 api.post({
+										url: 'user/LoginWx',
 										data: {
-											code: loginRes.code,
-											encrypted_data: res.encryptedData,
-											iv: res.iv,
-											raw_data: res.rawData,
-											signature: res.signature
+											compno:this.complist[this.compIndex].COMPNO,
+											userno: this.userno,
+											code: loginRes.code,						
+											device_type: api.DeviceType
 										},
 										success: data => {
 											console.log(data)
@@ -153,34 +236,47 @@
 													url: '../index/index'
 												});
 												try {
+													data.user.username=nickName;
+													data.user.avatar=avatarUrl;
+													
 													uni.setStorageSync('upload', 1)
 													uni.setStorageSync('login', 1)
-													uni.setStorageSync('token', data.data.token)
-													uni.setStorageSync('user', data.data.user)
+													uni.setStorageSync('token', data.token)
+													uni.setStorageSync('user', data.user)
+													uni.setStorageSync('pre_user', data.user.userno)
+													uni.setStorageSync('pre_compno', data.user.compno)
+													
 												} catch (e) {}
 												setTimeout(function() {
 													uni.navigateBack()
 												}, 500)
 											}
+											else
+											{
+												uni.showToast({
+													duration: 1500,
+													icon: 'none',
+													title: data.ErrorMsg
+												});
+											}
 										}
 									});
 								},
 								fail: (res) => {
-									if (res.errMsg == "getUserInfo:cancel" || res.errMsg == "getUserInfo:fail auth deny") {
-										uni.showModal({
-											title: '用户授权失败',
-											showCancel: false,
-											content: '请删除此小程序重新授权!',
-											success: function(res) {
-												if (res.confirm) {
-													console.log('用户点击确定')
-												}
-											}
-										})
-									}
-
+									console.log('getUserInfo 失败：res=');
+									console.log(res);
+									//获取用户信息失败，前往授权页面
+									uni.navigateTo({url: './login_wx'});
 								}
 							})
+						}
+						else
+						{
+							uni.showToast({
+								duration: 1500,
+								icon: 'none',
+								title: '微信登录失败！'
+							});
 						}
 					}
 				})
@@ -189,10 +285,10 @@
 	}
 </script>
 
-<style>
-	.zai-box{
-		padding: 0 100upx;
-		position: relative;
+<style scoped>
+	.content{
+		width: 100vw;
+		height: 100vh;
 	}
 	.zai-logo{
 		width: 100%;
@@ -200,22 +296,39 @@
 		height: 310upx;
 	}
 	.zai-title{
-		position: absolute;
-		top: 0;
-		line-height: 360upx;
+		display: flexbox;
 		font-size: 68upx;
-		color: #fff;
+		color: #000000;
 		text-align: center;
 		width: 100%;
-		margin-left: -100upx;
 	}
+	.avatorWrapper{
+		height: 20vh;
+		width: 100vw;
+		display: flex;
+		justify-content: center;
+		align-items: flex-end;
+	}
+	.avator{
+		width: 200upx;
+		height: 200upx;
+		overflow: hidden;
+	}
+	.avator .img{
+		width: 100%
+	}
+		
 	.zai-form{
-		margin-top: 300upx;
+		padding: 0 100upx;
+		margin-top: 20px;
 	}
+
 	.zai-input{
-		background: #e2f5fc;
+		/* background: #e2f5fc; */
+		background: #FFFFFF;
+		
 		margin-top: 30upx;
-		border-radius: 100upx;
+		border-radius: 80upx;
 		padding: 20upx 40upx;
 		font-size: 36upx;
 		height: 36px;
@@ -231,6 +344,7 @@
 	}
 	.zai-btn{
 		background: #66ccff;
+		margin-top: 30upx;
 		color: #fff;
 		border: 0;
 		border-radius: 100upx;
@@ -243,5 +357,12 @@
 	.zai-btn.button-hover{
 		transform: translate(1upx, 1upx);
 	}
-
+	.otherlogins {
+		margin-top:100upx ;
+		display: flex;
+		justify-content: center;
+		align-items: flex-end;
+		//flex-direction: row;
+		//flex-wrap: wrap;
+	}
 </style>

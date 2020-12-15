@@ -6,21 +6,21 @@
 			<view class="cu-list menu card-menu margin-top-sm">
 				<view v-for="(item,key) in list" :key="key" class="cu-item">
 					<view class="content padding-tb-sm">
-						<view>客户名称：{{item.name}}</view>
+						<view>客户名称：{{item.NAME}}</view>
 						<view class="text-gray ">							 
-							 联系人：{{item.contact}}							 
+							 联系人：{{item.CNT_MAN1}}							 
 						</view>
 						<view class="text-gray ">
-							 电话：{{item.phone}}
+							 电话：{{item.TEL1}}
 						</view>
 					</view>
 					<view class="action">						
-						<template v-if="item.status==0">
+						<!-- <template v-if="item.status==0"> -->
 						<view class="cu-tag round bg-green">正常合作</view>
-						</template>
-						<template v-else>
+						<!-- </template> -->
+<!-- 						<template v-else>
 						<view class="cu-tag round bg-orange">暂停合作</view>
-						</template>						
+						</template>	 -->					
 					</view>
 				</view>
 			</view>
@@ -53,14 +53,14 @@
 		},
 		onLoad(){
 			api.post({
-				url: 'wms/Customer/index',
+				url: 'Cust/GetList',
 				data: {
 					device_type: api.DeviceType
 				},
 				success: data => {
 					console.log(data);
-					if (data.code == 1) {
-						this.list = data.data;												
+					if(data.Status == 'success') {
+						this.list = data.Data;												
 					}
 				}
 			});			
